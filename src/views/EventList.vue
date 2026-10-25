@@ -1,41 +1,26 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useEvents } from '@/composables/useEvents';
 import EventCard from '@/components/event/EventCard.vue';
 import SearchBar from '@/components/event/SearchBar.vue';
 import CategoryFilter from '@/components/event/CategoryFilter.vue';
+import AppButton from '@/components/ui/AppButton.vue';
 
 const router = useRouter();
 
-const events = [
-  {
-    id: 1, title: 'Vue.js Mastery Workshop', date: 'Oct 12, 2026', loc: '📍 Tech Hub Jakarta', cat: 'Workshop', desc: 'Deep dive into Vue.js concepts, SPA concepts, Router, and state management to build high-performance web applications interactively.'
-  },
-  {
-    id: 2, title: 'National Tech Meetup', date: 'Oct 15, 2026', loc: '📍 Main Auditorium, City Center', cat: 'Meetup', desc: 'Hundreds of developers and tech enthusiasts to share the latest industry trends and expand professional networks.'
-  },
-  {
-    id: 3, title: 'Startup Pitch Competition', date: 'Nov 02, 2026', loc: '📍 Innovation Center', cat: 'Competition', desc: 'Watch the best local startup founders pitch their innovative ideas live in front of a panel of renowned investors.'
-  },
-  {
-    id: 4, title: 'UI/UX Design Sprint', date: 'Nov 10, 2026', loc: '📍 Creative Studio', cat: 'Workshop', desc: 'A hands-on session on designing user interfaces by implementing layout systems and visual hierarchy principles.'
-  },
-  {
-    id: 5, title: 'Digital Marketing Seminar', date: 'Nov 20, 2026', loc: '📍 Grand Hotel Hall', cat: 'Seminar', desc: 'An in-depth seminar discussing modern digital marketing strategies, from SEO optimization to user conversion tactics.'
-  },
-  {
-    id: 6, title: 'Community Leaders Summit', date: 'Dec 05, 2026', loc: '📍 Gatherly HQ', cat: 'Conference', desc: 'An exclusive year-end conference for community leaders to formulate sustainable ecosystem development strategies.'
-  },
-];
+// MENGONSUMSI SINGLE SOURCE OF TRUTH (Hanya mengambil event yang berstatus aktif)
+const { activeEvents } = useEvents();
 
 const searchQuery = ref('');
 const selectedCategory = ref('All');
 const categories = ['All', 'Workshop', 'Meetup', 'Competition', 'Seminar', 'Conference'];
 
+// FILTERING REAKTIF TERHADAP DATA STATE AKTIF
 const filteredEvents = computed(() => {
-  return events.filter(event => {
+  return activeEvents.value.filter(event => {
     const matchSearch = event.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-                        event.loc.toLowerCase().includes(searchQuery.value.toLowerCase());
+      event.loc.toLowerCase().includes(searchQuery.value.toLowerCase());
     const matchCat = selectedCategory.value === 'All' || event.cat === selectedCategory.value;
     return matchSearch && matchCat;
   });
@@ -46,54 +31,90 @@ const handleViewDetail = (id) => {
 };
 </script>
 
+
 <template>
   <div class="event-list-page">
-    <div class="header-section">
-      <h2 class="section-title">Upcoming Events</h2>
-      <p class="section-desc">Discover workshops, seminars, tech meetups, and competitions near you.</p>
+    <div class="page-header">
+      <div>
+        <h1>Jelajahi Event</h1>
+        <p>Temukan event menarik dan ikuti kegiatan favoritmu.</p>
+      </div>
     </div>
 
-    <div class="filters-section">
+    <div class="filters">
       <SearchBar v-model="searchQuery" />
-      <CategoryFilter :categories="categories" v-model="selectedCategory" />
+      <CategoryFilter
+        :categories="categories"
+        v-model="selectedCategory"
+      />
     </div>
 
-    <div class="event-grid">
+    <div v-if="filteredEvents.length > 0" class="event-grid">
       <EventCard
         v-for="event in filteredEvents"
         :key="event.id"
         :event="event"
-        @view-detail="handleViewDetail"
+        @click="handleViewDetail(event.id)"
       />
     </div>
 
-    <div v-if="filteredEvents.length === 0" class="empty-state">
-      <p>No events found matching your criteria.</p>
+    <div v-else class="empty-state">
+      <h3>Belum ada event</h3>
+      <p>Event yang sesuai belum tersedia. Coba kata kunci atau kategori lain.</p>
     </div>
   </div>
 </template>
 
 <style scoped>
-.header-section { margin-bottom: var(--space-8); }
-.section-title { font-size: 2.2rem; margin-bottom: var(--space-2); }
-.section-desc { color: var(--text-muted); font-size: 1.1rem; }
-
-.filters-section {
-  margin-bottom: var(--space-6);
+.event-list-page {
+  padding: 24px;
 }
 
-/* ADAPTIVE GRID */
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  margin-bottom: 8px;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.page-header p {
+  color: #64748b;
+}
+
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
 .event-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: var(--space-6);
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
 }
 
 .empty-state {
+  padding: 48px 24px;
   text-align: center;
-  padding: var(--space-12);
-  color: var(--text-muted);
-  background: var(--bg-light);
-  border-radius: var(--space-4);
+  color: #64748b;
+}
+
+.empty-state h3 {
+  margin-bottom: 8px;
+  color: #334155;
+}
+
+@media (max-width: 600px) {
+  .event-list-page {
+    padding: 16px;
+  }
+
+  .event-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
